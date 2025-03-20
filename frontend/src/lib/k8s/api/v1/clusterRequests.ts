@@ -168,7 +168,7 @@ export async function clusterRequest(
   // See plugins.go
   const headerVal = response.headers.get('X-Reload');
   if (headerVal && headerVal.indexOf('reload') !== -1) {
-    window.location.reload();
+    // window.location.reload();
   }
 
   // In case of OIDC auth if the token is about to expire the backend

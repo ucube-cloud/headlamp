@@ -24,7 +24,7 @@ async function backendFetch(url: string | URL, init: RequestInit) {
   // See plugins.go
   const headerVal = response.headers.get('X-Reload');
   if (headerVal && headerVal.indexOf('reload') !== -1) {
-    window.location.reload();
+    // window.location.reload();
   }
 
   if (!response.ok) {

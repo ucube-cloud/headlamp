@@ -72,7 +72,7 @@ function ClusterCreationButton() {
       // Handle kubeconfig submission
       Headlamp.setCluster({ kubeconfig })
         .then(() => {
-          window.location.reload();
+          // window.location.reload();
         })
         .catch((e: any) => {
           console.error('Error setting cluster', e);
@@ -82,7 +82,7 @@ function ClusterCreationButton() {
       // Handle name and server submission
       Headlamp.setCluster({ name, server })
         .then(() => {
-          window.location.reload();
+          // window.location.reload();
         })
         .catch((e: any) => {
           console.error('Error setting cluster', e);

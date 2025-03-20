@@ -131,7 +131,7 @@ export default function SettingsCluster() {
             }
           }
           history.push('/');
-          window.location.reload();
+          // window.location.reload();
         })
         .catch((err: Error) => {
           console.error('Error updating cluster name:', err.message);

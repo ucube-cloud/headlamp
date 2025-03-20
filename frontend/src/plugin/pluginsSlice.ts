@@ -116,7 +116,7 @@ export const pluginsSlice = createSlice({
     },
     /** Reloads the browser page */
     reloadPage() {
-      window.location.reload();
+      // window.location.reload();
     },
     /**
      * Set the plugin settings component.

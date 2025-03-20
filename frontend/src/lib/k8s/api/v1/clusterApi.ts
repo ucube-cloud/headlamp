@@ -85,7 +85,7 @@ export async function deleteCluster(
     const kubeconfig = await findKubeconfigByClusterName(cluster);
     if (kubeconfig !== null) {
       await deleteClusterKubeconfig(cluster);
-      window.location.reload();
+      // window.location.reload();
       return { clusters: {} };
     }
   }
