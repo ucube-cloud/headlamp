@@ -88,7 +88,7 @@ frontend: frontend-install
 
 .PHONY: frontend-build
 frontend-build:
-	cd frontend && npm run build
+	$(if $(SIDEBAR_DEFAULT_OPEN),export REACT_APP_SIDEBAR_DEFAULT_OPEN=$(SIDEBAR_DEFAULT_OPEN);) cd frontend && npm run build
 
 .PHONY: frontend-build-storybook
 frontend-build-storybook:

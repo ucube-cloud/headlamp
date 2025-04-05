@@ -41,9 +41,14 @@ export function useSidebarInfo() {
   const isOpen =
     (isSidebarOpen === true && !isNarrowOnly) || (isSidebarOpen === true && temporarySideBarOpen);
 
+  // If the user hasn't explicitly chosen whether to open/close the sidebar,
+  // check if REACT_APP_SIDEBAR_DEFAULT_OPEN env var is set to 'false' to keep it closed
+  const defaultClosed =
+    !isSidebarOpenUserSelected && import.meta.env.REACT_APP_SIDEBAR_DEFAULT_OPEN === 'false';
+
   return {
     isCollapsed: !temporarySideBarOpen && !isNarrowOnly,
-    isOpen,
+    isOpen: defaultClosed ? false : isOpen,
     isNarrow: !isSidebarOpen || isNarrowOnly,
     canExpand: !isNarrowOnly,
     isTemporary,
