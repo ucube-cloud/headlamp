@@ -134,6 +134,16 @@ function isDockerDesktop(): boolean {
   return true;
 }
 
+/**
+ * isBackstage checks if Headlamp is running in a backstage app
+ *
+ * @returns true if Headlamp is running in a backstage app
+ */
+function isBackstage(): boolean {
+  // if running in iframe and the url has /api/headlamp in it, then we are running in backstage
+  return window.self !== window.top && window.location.href.includes('/api/headlamp');
+}
+
 export function getFilterValueByNameFromURL(key: string, location: any): string[] {
   const searchParams = new URLSearchParams(location.search);
 
@@ -394,6 +404,7 @@ const exportFunctions = {
   getAppUrl,
   isElectron,
   isDockerDesktop,
+  isBackstage,
   getAppVersion,
   setAppVersion,
   setRecentCluster,
