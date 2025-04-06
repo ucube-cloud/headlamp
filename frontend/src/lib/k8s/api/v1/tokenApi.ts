@@ -1,5 +1,5 @@
 import { decodeToken } from 'react-jwt';
-import { isDebugVerbose } from '../../../../helpers';
+import helpers, { isDebugVerbose } from '../../../../helpers';
 import { getToken, setToken } from '../../../auth';
 import { getCluster } from '../../../cluster';
 import { KubeToken } from '../../token';
@@ -78,9 +78,10 @@ export async function refreshToken(token: string | null): Promise<void> {
     spec: { expirationSeconds: 86400 },
   };
 
+  const headersInit: HeadersInit = helpers.addBackstageAuthHeaders(JSON_HEADERS);
   try {
     const headers = new Headers({
-      ...JSON_HEADERS,
+      ...headersInit,
     });
 
     const token = getToken(cluster);

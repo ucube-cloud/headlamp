@@ -442,6 +442,23 @@ export function getHeadlampAPIHeaders(): { [key: string]: string } {
   };
 }
 
+/**
+ * Adds backstage authentication token to headers if available
+ *
+ * @param headers - optional existing headers to add the token to
+ * @returns headers with backstage token if available
+ */
+function addBackstageAuthHeaders(headers: HeadersInit = {}): HeadersInit {
+  const token = getBackstageToken();
+  if (token) {
+    return {
+      ...headers,
+      'X-BACKSTAGE-TOKEN': token,
+    };
+  }
+  return headers;
+}
+
 const exportFunctions = {
   getBaseUrl,
   isDevMode,
@@ -465,6 +482,7 @@ const exportFunctions = {
   getWebsocketMultiplexerEnabled,
   storeTableSettings,
   loadTableSettings,
+  addBackstageAuthHeaders,
 };
 
 export default exportFunctions;

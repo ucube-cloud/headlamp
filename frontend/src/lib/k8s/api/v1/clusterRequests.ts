@@ -1,6 +1,6 @@
 // @todo: Params is a confusing name for options, because params are also query params.
 
-import { isDebugVerbose } from '../../../../helpers';
+import helpers, { isDebugVerbose } from '../../../../helpers';
 import store from '../../../../redux/stores/store';
 import { findKubeconfigByClusterName, getUserIdFromLocalStorage } from '../../../../stateless';
 import { getToken, logout, setToken } from '../../../auth';
@@ -151,6 +151,9 @@ export async function clusterRequest(
   let url = combinePath(BASE_HTTP_URL, fullPath);
   url += asQuery(queryParams);
   const requestData = { signal: controller.signal, ...opts };
+  if (helpers.isBackstage()) {
+    requestData.headers = helpers.addBackstageAuthHeaders(requestData.headers);
+  }
   let response: Response = new Response(undefined, { status: 502, statusText: 'Unreachable' });
   try {
     response = await fetch(url, requestData);

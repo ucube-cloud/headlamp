@@ -58,14 +58,18 @@ export async function startPortForward(
   id: string = ''
 ): Promise<PortForward> {
   const kubeconfig = await findKubeconfigByClusterName(cluster);
-  const headers: HeadersInit = {
+  let headers: HeadersInit = helpers.addBackstageAuthHeaders(JSON_HEADERS);
+  headers = {
     Authorization: `Bearer ${getToken(cluster)}`,
-    ...JSON_HEADERS,
+    ...headers,
   };
 
   // This means cluster is dynamically configured.
   if (kubeconfig !== null) {
-    headers['X-HEADLAMP-USER-ID'] = getUserIdFromLocalStorage();
+    headers = {
+      ...headers,
+      'X-HEADLAMP-USER-ID': getUserIdFromLocalStorage(),
+    };
   }
 
   const request: PortForwardRequest = {
@@ -110,17 +114,23 @@ export async function stopOrDeletePortForward(
   stopOrDelete: boolean = true
 ): Promise<string> {
   const kubeconfig = await findKubeconfigByClusterName(cluster);
-  const headers: HeadersInit = {
+  let headers: HeadersInit = helpers.addBackstageAuthHeaders(JSON_HEADERS);
+  headers = {
     'Content-Type': 'application/json',
+    ...headers,
   };
 
   // This means cluster is dynamically configured.
   if (kubeconfig !== null) {
-    headers['X-HEADLAMP-USER-ID'] = getUserIdFromLocalStorage();
+    headers = {
+      ...headers,
+      'X-HEADLAMP-USER-ID': getUserIdFromLocalStorage(),
+    };
   }
 
   return fetch(`${helpers.getAppUrl()}portforward`, {
     method: 'DELETE',
+    headers: new Headers(headers),
     body: JSON.stringify({
       cluster,
       id,
@@ -147,11 +157,14 @@ export async function stopOrDeletePortForward(
  */
 export async function listPortForward(cluster: string): Promise<PortForward[]> {
   const kubeconfig = await findKubeconfigByClusterName(cluster);
-  const headers: HeadersInit = {};
+  let headers: HeadersInit = helpers.addBackstageAuthHeaders(JSON_HEADERS);
 
   // This means cluster is dynamically configured.
   if (kubeconfig !== null) {
-    headers['X-HEADLAMP-USER-ID'] = getUserIdFromLocalStorage();
+    headers = {
+      ...headers,
+      'X-HEADLAMP-USER-ID': getUserIdFromLocalStorage(),
+    };
   }
 
   return fetch(`${helpers.getAppUrl()}portforward/list?cluster=${cluster}`, {
