@@ -144,6 +144,50 @@ function isBackstage(): boolean {
   return window.self !== window.top && window.location.href.includes('/api/headlamp');
 }
 
+const BACKSTAGE_TOKEN_STORAGE_KEY = 'backstage_token';
+
+/**
+ * setBackstageToken sets the backstage token in the local storage
+ *
+ * @param token - the token to set
+ */
+function setBackstageToken(token: string) {
+  localStorage.setItem(BACKSTAGE_TOKEN_STORAGE_KEY, token);
+}
+
+/**
+ * getBackstageToken gets the backstage token from the local storage
+ *
+ * @returns the backstage token
+ */
+function getBackstageToken(): string | null {
+  return localStorage.getItem(BACKSTAGE_TOKEN_STORAGE_KEY);
+}
+
+/**
+ * setupBackstageTokenReceiver sets up a listener for messages from the backstage app
+ * and sets the backend token if it is received
+ *
+ * @returns void
+ */
+function setupBackstageTokenReceiver() {
+  if (isBackstage()) {
+    console.log('Running in backstage, so setting up token receiver');
+
+    const handleMessage = (event: MessageEvent) => {
+      const { type, payload } = event.data || {};
+      if (type === 'BACKSTAGE_AUTH_TOKEN') {
+        const { token } = payload || {};
+        if (token) {
+          setBackstageToken(token);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+  }
+}
+
 export function getFilterValueByNameFromURL(key: string, location: any): string[] {
   const searchParams = new URLSearchParams(location.search);
 
@@ -405,6 +449,8 @@ const exportFunctions = {
   isElectron,
   isDockerDesktop,
   isBackstage,
+  getBackstageToken,
+  setupBackstageTokenReceiver,
   getAppVersion,
   setAppVersion,
   setRecentCluster,
