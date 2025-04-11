@@ -178,8 +178,11 @@ export function useFilterFunc<
  * @param returnWhenNoClusters return this value when no clusters are found.
  * @returns the cluster group from the URL.
  */
-export function getSelectedClusters(returnWhenNoClusters: string[] = []): string[] {
-  const clusterFromURL = getClusterPathParam();
+export function getSelectedClusters(
+  returnWhenNoClusters: string[] = [],
+  urlPath?: string
+): string[] {
+  const clusterFromURL = getClusterPathParam(urlPath);
   return clusterFromURL?.split('+') || returnWhenNoClusters;
 }
 
