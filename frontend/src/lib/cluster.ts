@@ -18,6 +18,17 @@ export function getClusterPrefixedPath(path?: string | null) {
  * @returns The current cluster name, or null if not in a cluster context.
  */
 export function getCluster(): string | null {
+  const clusterString = getClusterPathParam();
+  if (!clusterString) return null;
+
+  if (clusterString.includes('+')) {
+    return clusterString.split('+')[0];
+  }
+  return clusterString;
+}
+
+/** Get raw cluster param. Only use for creating links */
+export function getClusterPathParam(): string | undefined {
   const prefix = helpers.getBaseUrl();
   const urlPath = helpers.isElectron()
     ? window.location.hash.substring(1)
@@ -26,5 +37,6 @@ export function getCluster(): string | null {
   const clusterURLMatch = matchPath<{ cluster?: string }>(urlPath, {
     path: getClusterPrefixedPath(),
   });
-  return (!!clusterURLMatch && clusterURLMatch.params.cluster) || null;
+
+  return clusterURLMatch?.params?.cluster;
 }
