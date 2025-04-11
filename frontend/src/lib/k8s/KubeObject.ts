@@ -5,7 +5,7 @@ import exportFunctions from '../../helpers';
 import { getCluster } from '../cluster';
 import { createRouteURL } from '../router';
 import { getSelectedClusters, timeAgo } from '../util';
-import { useConnectApi } from '.';
+import { useConnectApi, useSelectedClusters } from '.';
 import { RecursivePartial } from './api/v1/factories';
 import { useKubeObject } from './api/v2/hooks';
 import { makeListRequests, useKubeObjectList } from './api/v2/useKubeObjectList';
