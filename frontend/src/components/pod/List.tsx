@@ -13,11 +13,9 @@ import { LightTooltip, Link, SimpleTableProps } from '../common';
 import { StatusLabel, StatusLabelProps } from '../common/Label';
 import ResourceListView from '../common/Resource/ResourceListView';
 
-export function makePodStatusLabel(pod: Pod) {
+function getPodStatus(pod: Pod) {
   const phase = pod.status.phase;
   let status: StatusLabelProps['status'] = '';
-
-  const { reason, message: tooltip } = pod.getDetailedStatus();
 
   if (phase === 'Failed') {
     status = 'error';
@@ -29,6 +27,13 @@ export function makePodStatusLabel(pod: Pod) {
       status = 'warning';
     }
   }
+
+  return status;
+}
+
+export function makePodStatusLabel(pod: Pod) {
+  const status = getPodStatus(pod);
+  const { reason, message: tooltip } = pod.getDetailedStatus();
 
   return (
     <LightTooltip title={tooltip} interactive>
@@ -137,7 +142,7 @@ export function PodListRenderer(props: PodListProps) {
           id: 'status',
           gridTemplate: 'min-content',
           label: t('translation|Status'),
-          getValue: pod => pod.getDetailedStatus().reason,
+          getValue: pod => getPodStatus(pod) + '' + pod.getDetailedStatus().reason,
           render: makePodStatusLabel,
         },
         ...(metrics?.length
