@@ -164,29 +164,49 @@ function getBackstageToken(): string | null {
   return localStorage.getItem(BACKSTAGE_TOKEN_STORAGE_KEY);
 }
 
-/**
- * setupBackstageTokenReceiver sets up a listener for messages from the backstage app
- * and sets the backend token if it is received
- *
- * @returns void
- */
-function setupBackstageTokenReceiver() {
-  if (isBackstage()) {
-    console.log('Running in backstage, so setting up token receiver');
+// interface BackstageMessage {
+//   type: 'BACKSTAGE_AUTH_TOKEN' | 'BACKSTAGE_KUBECONFIG';
+//   payload?: {
+//     token?: string;
+//     kubeconfig?: string;
+//   };
+// }
+// /**
+//  * setupBackstageMessageReceiver sets up a listener for messages from the backstage app
+//  * and sets the backend token if it is received
+//  *
+//  * @returns void
+//  */
+// function setupBackstageMessageReceiver() {
+//   if (isBackstage()) {
+//     console.log('Running in backstage, so setting up token receiver');
 
-    const handleMessage = (event: MessageEvent) => {
-      const { type, payload } = event.data || {};
-      if (type === 'BACKSTAGE_AUTH_TOKEN') {
-        const { token } = payload || {};
-        if (token) {
-          setBackstageToken(token);
-        }
-      }
-    };
+//     const handleMessage = (event: MessageEvent) => {
+//       try {
+//         const { type, payload } = event.data as BackstageMessage;
+//         console.log('BACKSTAGE_MESSAGE', type, payload);
+//         if (type === 'BACKSTAGE_AUTH_TOKEN') {
+//           const { token } = payload || {};
+//           if (token) {
+//             setBackstageToken(token);
+//           }
+//         } else if (type === 'BACKSTAGE_KUBECONFIG') {
+//            const kubeconfig = payload?.kubeconfig;
+//            console.log('BACKSTAGE_KUBECONFIG', kubeconfig);
+//            if (kubeconfig) {
+//              // set the stateless cluster kubeconfig
+//              statelessFunctions.storeStatelessClusterKubeconfig(kubeconfig);
+//            }
+//         }
 
-    window.addEventListener('message', handleMessage);
-  }
-}
+//       } catch (error) {
+//         console.error('Error processing backstage message:', error);
+//       }
+//     };
+
+//     window.addEventListener('message', handleMessage);
+//   }
+// }
 
 export function getFilterValueByNameFromURL(key: string, location: any): string[] {
   const searchParams = new URLSearchParams(location.search);
@@ -451,10 +471,11 @@ export function getHeadlampAPIHeaders(): { [key: string]: string } {
 function addBackstageAuthHeaders(headers: HeadersInit = {}): HeadersInit {
   const token = getBackstageToken();
   if (token) {
-    return {
-      ...headers,
-      'X-BACKSTAGE-TOKEN': token,
-    };
+    // Create a new Headers object from the existing headers
+    const newHeaders = new Headers(headers);
+    // Add the token header
+    newHeaders.set('X-BACKSTAGE-TOKEN', token);
+    return newHeaders;
   }
   return headers;
 }
@@ -467,7 +488,8 @@ const exportFunctions = {
   isDockerDesktop,
   isBackstage,
   getBackstageToken,
-  setupBackstageTokenReceiver,
+  setBackstageToken,
+  // setupBackstageMessageReceiver,
   getAppVersion,
   setAppVersion,
   setRecentCluster,

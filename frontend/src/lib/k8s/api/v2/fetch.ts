@@ -18,7 +18,9 @@ export const BASE_HTTP_URL = helpers.getAppUrl();
  * @returns fetch Response
  */
 async function backendFetch(url: string | URL, init: RequestInit) {
+  console.log('backendFetch', url, '===', init.headers, '=== BEFORE');
   init.headers = helpers.addBackstageAuthHeaders(init.headers);
+  console.log('backendFetch', url, '===', init.headers, '=== AFTER');
   const response = await fetch(makeUrl([BASE_HTTP_URL, url]), init);
 
   // The backend signals through this header that it wants a reload.
@@ -60,10 +62,12 @@ export async function clusterFetch(url: string | URL, init: RequestInit & { clus
   // Set stateless kubeconfig if exists
   const kubeconfig = await findKubeconfigByClusterName(init.cluster);
   if (kubeconfig !== null) {
+    console.log('inside kubeconfig ', url.toString());
     const userID = getUserIdFromLocalStorage();
     init.headers.set('KUBECONFIG', kubeconfig);
     init.headers.set('X-HEADLAMP-USER-ID', userID);
   }
+  console.log('clusterFetch', init.cluster, '===', kubeconfig, '===', url.toString());
 
   // Refresh service account token only if the cluster auth type is not OIDC
   if (getClusterAuthType(init.cluster) !== 'oidc') {
@@ -77,6 +81,7 @@ export async function clusterFetch(url: string | URL, init: RequestInit & { clus
   const urlParts = init.cluster ? ['clusters', init.cluster, url] : [url];
 
   try {
+    console.log('Final init headers', url.toString(), '===', init.headers, 'Before backendFetch');
     const response = await backendFetch(makeUrl(urlParts), init);
     // In case of OIDC auth if the token is about to expire the backend
     // sends a refreshed token in the response header.

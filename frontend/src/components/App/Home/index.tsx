@@ -7,6 +7,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import jsyaml from 'js-yaml';
 import { isEqual } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,10 +18,12 @@ import { useClustersConf, useClustersVersion } from '../../../lib/k8s';
 import { ApiError, deleteCluster } from '../../../lib/k8s/apiProxy';
 import { Cluster } from '../../../lib/k8s/cluster';
 import Event from '../../../lib/k8s/event';
+import { KubeconfigObject } from '../../../lib/k8s/kubeconfig';
 import { createRouteURL } from '../../../lib/router';
 import { useId } from '../../../lib/util';
 import { setConfig } from '../../../redux/configSlice';
 import { useTypedSelector } from '../../../redux/reducers/reducers';
+import * as statelessFunctions from '../../../stateless';
 import { Link, PageGrid, SectionBox, SectionFilterHeader } from '../../common';
 import { ConfirmDialog } from '../../common';
 import ErrorBoundary from '../../common/ErrorBoundary/ErrorBoundary';
@@ -243,6 +246,107 @@ function useWarningSettingsPerCluster(clusterNames: string[]) {
   return warningLabels;
 }
 
+/**
+ * storeKubeconfigFromBackstage stores the kubeconfig from backstage as a stateless cluster kubeconfig
+ *
+ * @param kubeconfig - the kubeconfig to store
+ */
+function storeKubeconfigFromBackstage(kubeconfig: string) {
+  try {
+    // Decode base64 kubeconfig
+    const decodedKubeconfig = atob(kubeconfig);
+    const parsedKubeconfig = jsyaml.load(decodedKubeconfig) as KubeconfigObject;
+
+    // For each context, create a new kubeconfig
+    parsedKubeconfig.contexts.forEach(
+      (context: { name: string; context: { cluster: string; user: string } }) => {
+        // Find the corresponding cluster and auth info
+        const cluster = parsedKubeconfig.clusters.find(
+          (c: { name: string }) => c.name === context.context.cluster
+        );
+        const authInfo = parsedKubeconfig.users.find(
+          (u: { name: string }) => u.name === context.context.user
+        );
+
+        if (!cluster || !authInfo) {
+          console.warn(`Missing cluster or auth info for context ${context.name}`);
+          return;
+        }
+
+        // Create a new kubeconfig with just this context, cluster, and auth info
+        const newKubeconfig: KubeconfigObject = {
+          apiVersion: parsedKubeconfig.apiVersion,
+          kind: parsedKubeconfig.kind,
+          preferences: parsedKubeconfig.preferences,
+          'current-context': context.name,
+          contexts: [context],
+          clusters: [cluster],
+          users: [authInfo],
+        };
+
+        // Convert back to YAML and base64 encode
+        const newKubeconfigYaml = jsyaml.dump(newKubeconfig, { lineWidth: -1 });
+        const newKubeconfigBase64 = btoa(newKubeconfigYaml);
+        console.log('newKubeconfigBase64', newKubeconfigBase64, context.name);
+        statelessFunctions.findAndReplaceKubeconfig(context.name, newKubeconfigBase64, true);
+      }
+    );
+  } catch (error) {
+    console.error('Error storing kubeconfig from backstage:', error);
+  }
+}
+
+interface BackstageMessage {
+  type: 'BACKSTAGE_AUTH_TOKEN' | 'BACKSTAGE_KUBECONFIG';
+  payload?: {
+    token?: string;
+    kubeconfig?: string;
+  };
+}
+/**
+ * setupBackstageMessageReceiver sets up a listener for messages from the backstage app
+ * and sets the backend token if it is received
+ *
+ * @returns void
+ */
+function setupBackstageMessageReceiver() {
+  if (helpers.isBackstage()) {
+    console.log('Running in backstage, so setting up token receiver');
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const { type, payload } = event.data as BackstageMessage;
+        console.log('BACKSTAGE_MESSAGE', type, payload);
+        if (type === 'BACKSTAGE_AUTH_TOKEN') {
+          const { token } = payload || {};
+          if (token) {
+            helpers.setBackstageToken(token);
+            // send acknowledgement message back to parent
+            setTimeout(() => {
+              window.parent.postMessage({ type: 'BACKSTAGE_AUTH_TOKEN_ACK' }, '*');
+            }, 1000);
+          }
+        } else if (type === 'BACKSTAGE_KUBECONFIG') {
+          const kubeconfig = payload?.kubeconfig;
+          console.log('BACKSTAGE_KUBECONFIG', kubeconfig);
+          if (kubeconfig) {
+            // set the stateless cluster kubeconfig
+            storeKubeconfigFromBackstage(kubeconfig);
+            // send acknowledgement message back to parent
+            setTimeout(() => {
+              window.parent.postMessage({ type: 'BACKSTAGE_KUBECONFIG_ACK' }, '*');
+            }, 1000);
+          }
+        }
+      } catch (error) {
+        console.error('Error processing backstage message:', error);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+  }
+}
+
 function HomeComponent(props: HomeComponentProps) {
   const { clusters } = props;
   const [customNameClusters, setCustomNameClusters] = React.useState(getClusterNames());
@@ -255,7 +359,7 @@ function HomeComponent(props: HomeComponentProps) {
   // if running in backstage, set the token receiver
   React.useEffect(() => {
     if (helpers.isBackstage()) {
-      helpers.setupBackstageTokenReceiver();
+      setupBackstageMessageReceiver();
     }
   }, []);
 
