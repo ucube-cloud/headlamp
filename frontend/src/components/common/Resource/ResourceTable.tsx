@@ -331,7 +331,8 @@ function ResourceTableContent<RowItem extends KubeObject>(props: ResourceTablePr
       });
     }
     function removeClusterColIfNeeded(cols: typeof columns) {
-      return cols.filter(col => clusters.length > 1 || col !== 'cluster');
+      const numClusters = clusters?.length ?? 0;
+      return cols.filter(col => numClusters > 1 || col !== 'cluster');
     }
 
     const allColumns = removeClusterColIfNeeded(processedColumns)
