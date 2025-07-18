@@ -70,6 +70,93 @@ jobs:
         path: ./app/dist/Headlamp*.dmg
         if-no-files-found: error
         retention-days: 1
+  test-headless:
+    runs-on: macos-latest
+    needs: build-mac
+    permissions:
+      actions: read # for downloading artifacts
+    strategy:
+      matrix:
+        arch: [x86, arm64]
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+      with:
+        name: dmgs
+        path: ./dmgs
+    - name: Test Headlamp runs in headless mode (${{ matrix.arch }})
+      run: |
+        cd ./dmgs
+
+        # Map x86 to x64 for filename matching
+        ARCH=${{ matrix.arch }}
+        if [ "$ARCH" = "x86" ]; then
+          ARCH="x64"
+        fi
+
+        echo "Testing Headlamp (${{ matrix.arch }}) in headless mode..."
+
+        # Find and mount the specific architecture DMG
+        DMG_FILE=$(ls ./Headlamp*${ARCH}*.dmg | head -1)
+        if [ -z "$DMG_FILE" ]; then
+          echo "❌ Could not find DMG file for architecture ${ARCH}"
+          exit 1
+        fi
+
+        echo "Found DMG: $DMG_FILE"
+        MOUNT_OUTPUT="$(hdiutil attach "$DMG_FILE")"
+        VOLUME_NAME="$(echo "$MOUNT_OUTPUT" | grep -o '/Volumes/[^\s]*')"
+
+        xattr -dr com.apple.quarantine "$VOLUME_NAME/Headlamp.app"
+        # Start Headlamp in headless mode in the background
+        timeout 30s "$VOLUME_NAME/Headlamp.app/Contents/MacOS/Headlamp" --headless --port=0 &
+        HEADLAMP_PID=$!
+
+        # Wait for the server to start and find the port it's running on
+        sleep 5
+
+        # Check if Headlamp process is still running
+        if ! kill -0 $HEADLAMP_PID 2>/dev/null; then
+          echo "❌ Headlamp process died unexpectedly"
+          hdiutil detach "$VOLUME_NAME" || true
+          exit 1
+        fi
+
+        # Get the port Headlamp is using (when port=0, it picks a random available port)
+        PORT=$(lsof -ti:3000-65535 -sTCP:LISTEN | head -n1 | xargs -r lsof -i -P -n | grep LISTEN | grep $HEADLAMP_PID | head -n1 | sed 's/.*:\([0-9]*\) .*/\1/' || echo "")
+
+        if [ -z "$PORT" ]; then
+          # Fallback: try common ports or check if it started on default port
+          for p in 4466 8080 3000; do
+            if curl -s --connect-timeout 2 "http://localhost:$p/config" >/dev/null 2>&1; then
+              PORT=$p
+              break
+            fi
+          done
+        fi
+
+        if [ -n "$PORT" ]; then
+          echo "Found Headlamp running on port $PORT"
+          # Test if the server responds to requests
+          if curl -s --connect-timeout 5 --max-time 10 "http://localhost:$PORT/config" | grep -q "baseURL"; then
+            echo "✅ Headlamp (${{ matrix.arch }}) headless mode test passed - server is responding"
+          else
+            echo "❌ Headlamp server is not responding correctly"
+            kill $HEADLAMP_PID 2>/dev/null || true
+            hdiutil detach "$VOLUME_NAME" || true
+            exit 1
+          fi
+        else
+          echo "❌ Could not find Headlamp server port"
+          kill $HEADLAMP_PID 2>/dev/null || true
+          hdiutil detach "$VOLUME_NAME" || true
+          exit 1
+        fi
+
+        # Clean up
+        kill $HEADLAMP_PID 2>/dev/null || true
+        wait $HEADLAMP_PID 2>/dev/null || true
+        hdiutil detach "$VOLUME_NAME" || true
   notarize:
     permissions:
       id-token: write # For fetching an OpenID Connect (OIDC) token
