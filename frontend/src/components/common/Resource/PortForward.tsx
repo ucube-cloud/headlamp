@@ -102,7 +102,7 @@ function PortForwardContent(props: PortForwardProps) {
   const [error, setError] = React.useState(null);
   const [portForward, setPortForward] = React.useState<PortForwardState | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const cluster = getCluster();
+  const cluster = resource?.cluster || getCluster();
   const { t } = useTranslation(['translation', 'resource']);
   const [pods, podsFetchError] = Pod.useList({
     namespace,
@@ -262,7 +262,6 @@ function PortForwardContent(props: PortForwardProps) {
 
   function deletePortForwardHandler() {
     const id = portForward?.id;
-    const cluster = getCluster();
     setLoading(true);
     if (!cluster || !id) {
       return;
