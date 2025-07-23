@@ -281,10 +281,27 @@ jobs:
           </html>
           EOF
           
-          # Replace the placeholder with actual JSON data
-          # Escape the JSON properly for JavaScript
-          ESCAPED_JSON=$(echo "$RESULT" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | tr -d '\n' | tr -d '\r')
-          sed -i "s/REPLACE_WITH_JSON_DATA/$ESCAPED_JSON/g" status-page/index.html
+          # Use a Node.js script to properly embed JSON in HTML
+          cat > embed-json.js << 'JSEOF'
+          const fs = require('fs');
+          
+          // Read the JSON data
+          const jsonData = JSON.parse(fs.readFileSync('release-status.json', 'utf8'));
+          
+          // Read the HTML template
+          let htmlContent = fs.readFileSync('status-page/index.html', 'utf8');
+          
+          // Replace the placeholder with properly serialized JSON
+          htmlContent = htmlContent.replace('REPLACE_WITH_JSON_DATA', JSON.stringify(jsonData));
+          
+          // Write the final HTML
+          fs.writeFileSync('status-page/index.html', htmlContent);
+          
+          console.log('Successfully embedded JSON data in HTML');
+          JSEOF
+          
+          # Run the embedding script
+          node embed-json.js
 
       - name: Setup Pages
         if: steps.check-status.outputs.success == 'true' || steps.check-status.outputs.success == 'false'
