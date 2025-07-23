@@ -25,6 +25,17 @@ interface GitHubRelease {
   assets: ReleaseAsset[];
 }
 
+export interface ReleaseCheckResult {
+  version: string;
+  success: boolean;
+  timestamp: string;
+  releaseFound: boolean;
+  allArtifactsPresent: boolean;
+  foundAssets: Record<string, boolean>;
+  unknownAssets: string[];
+  error?: string;
+}
+
 export function getOctokit(): Octokit {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
@@ -104,6 +115,75 @@ export async function checkArtifactsForRelease(releaseDraft: GitHubRelease): Pro
   }
 
   return allFound;
+}
+
+export async function checkReleaseDetailed(releaseVersion: string): Promise<ReleaseCheckResult> {
+  const result: ReleaseCheckResult = {
+    version: releaseVersion,
+    success: false,
+    timestamp: new Date().toISOString(),
+    releaseFound: false,
+    allArtifactsPresent: false,
+    foundAssets: {},
+    unknownAssets: []
+  };
+
+  try {
+    const releaseDraft = await getRelease(releaseVersion);
+
+    if (!releaseDraft) {
+      result.error = `No release draft found for version ${releaseVersion}`;
+      return result;
+    }
+
+    result.releaseFound = true;
+
+    // Check artifacts
+    const version = releaseDraft.tag_name?.replace('v', '') || releaseDraft.name;
+    if (!version) {
+      result.error = 'Release draft does not have a version';
+      return result;
+    }
+
+    const requiredAssets = [
+      `Headlamp-${version}-mac-x64.dmg`,
+      `Headlamp-${version}-mac-arm64.dmg`,
+      `Headlamp-${version}-linux-arm64.AppImage`,
+      `Headlamp-${version}-linux-armv7l.AppImage`,
+      `Headlamp-${version}-linux-x64.AppImage`,
+      `Headlamp-${version}-linux-arm64.tar.gz`,
+      `Headlamp-${version}-linux-armv7l.tar.gz`,
+      `Headlamp-${version}-linux-x64.tar.gz`,
+      `Headlamp-${version}-win-x64.exe`,
+      `headlamp_${version}-1_amd64.deb`,
+      `checksums.txt`
+    ];
+
+    const assets = releaseDraft.assets || [];
+    const foundAssets: Record<string, boolean> = {};
+    requiredAssets.forEach(asset => {
+      foundAssets[asset] = false;
+    });
+    const unknownAssets: string[] = [];
+
+    assets.forEach((asset: ReleaseAsset) => {
+      if (foundAssets.hasOwnProperty(asset.name)) {
+        foundAssets[asset.name] = true;
+      } else {
+        unknownAssets.push(asset.name);
+      }
+    });
+
+    result.foundAssets = foundAssets;
+    result.unknownAssets = unknownAssets;
+    result.allArtifactsPresent = Object.values(foundAssets).every(found => found);
+    result.success = result.allArtifactsPresent;
+
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    return result;
+  }
 }
 
 export async function publishDraftRelease(releaseId: number): Promise<void> {

@@ -21,7 +21,8 @@ program.name('releaser')
 
 program.command('check')
   .description('Check if a release draft exists with all artifacts')
-  .argument('<release-version>', 'Version to check (e.g., 0.30.0)')
+  .argument('<release-version>', 'Version to check (e.g., 0.30.0) or "LATEST_VERSION" for current version')
+  .option('--json', 'Output results in JSON format')
   .action(checkRelease);
 
 program.command('start')

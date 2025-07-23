@@ -1,9 +1,34 @@
 import chalk from 'chalk';
-import { getRelease, checkArtifactsForRelease } from '../utils/github';
-import { sanitizeVersion } from '../utils/version';
+import { getRelease, checkArtifactsForRelease, checkReleaseDetailed } from '../utils/github';
+import { sanitizeVersion, getLatestVersion } from '../utils/version';
 
-export async function checkRelease(releaseVersion: string): Promise<void> {
-  const version = sanitizeVersion(releaseVersion);
+interface CheckOptions {
+  json?: boolean;
+}
+
+export async function checkRelease(releaseVersion: string, options: CheckOptions = {}): Promise<void> {
+  let version: string;
+  
+  if (releaseVersion.toUpperCase() === 'LATEST_VERSION') {
+    version = getLatestVersion();
+    if (!options.json) {
+      console.log(chalk.blue(`Using latest version: ${version}`));
+    }
+  } else {
+    version = sanitizeVersion(releaseVersion);
+  }
+
+  if (options.json) {
+    // JSON output mode
+    const result = await checkReleaseDetailed(version);
+    console.log(JSON.stringify(result, null, 2));
+    if (!result.success) {
+      process.exit(1);
+    }
+    return;
+  }
+
+  // Normal console output mode
   console.log(chalk.blue(`Checking release draft for version ${version}...`));
 
   try {
