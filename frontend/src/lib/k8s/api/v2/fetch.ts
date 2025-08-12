@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import helpers from '../../../../helpers';
 import { getAppUrl } from '../../../../helpers/getAppUrl';
 import { findKubeconfigByClusterName, getUserIdFromLocalStorage } from '../../../../stateless';
 import { getToken, setToken } from '../../../auth';
@@ -34,6 +35,7 @@ export const BASE_HTTP_URL = getAppUrl();
  * @returns fetch Response
  */
 async function backendFetch(url: string | URL, init: RequestInit) {
+  init.headers = helpers.addBackstageAuthHeaders(init.headers);
   const response = await fetch(makeUrl([BASE_HTTP_URL, url]), init);
 
   // The backend signals through this header that it wants a reload.

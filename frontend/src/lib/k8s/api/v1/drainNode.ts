@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import helpers from '../../../../helpers';
 import { getAppUrl } from '../../../../helpers/getAppUrl';
 import { getToken } from '../../../auth';
 import { JSON_HEADERS } from './constants';
@@ -34,11 +35,12 @@ import { JSON_HEADERS } from './constants';
  * to get the status of the drain node process.
  */
 export function drainNode(cluster: string, nodeName: string) {
+  const headers = helpers.addBackstageAuthHeaders(JSON_HEADERS);
   return fetch(`${getAppUrl()}drain-node`, {
     method: 'POST',
     headers: new Headers({
       Authorization: `Bearer ${getToken(cluster)}`,
-      ...JSON_HEADERS,
+      ...headers,
     }),
     body: JSON.stringify({
       cluster,
@@ -76,11 +78,12 @@ interface DrainNodeStatus {
  * @throws {Error} if the response is not ok
  */
 export function drainNodeStatus(cluster: string, nodeName: string): Promise<DrainNodeStatus> {
+  const headers = helpers.addBackstageAuthHeaders(JSON_HEADERS);
   return fetch(`${getAppUrl()}drain-node-status?cluster=${cluster}&nodeName=${nodeName}`, {
     method: 'GET',
     headers: new Headers({
       Authorization: `Bearer ${getToken(cluster)}`,
-      ...JSON_HEADERS,
+      ...headers,
     }),
   }).then(response => {
     return response.json().then((data: DrainNodeStatus) => {

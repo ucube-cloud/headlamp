@@ -15,6 +15,7 @@
  */
 
 import { decodeToken } from 'react-jwt';
+import helpers from '../../../../helpers';
 import { isDebugVerbose } from '../../../../helpers/debugVerbose';
 import { getToken, setToken } from '../../../auth';
 import { getCluster } from '../../../cluster';
@@ -96,7 +97,7 @@ export async function refreshToken(token: string | null): Promise<void> {
 
   try {
     const headers = new Headers({
-      ...JSON_HEADERS,
+      ...helpers.addBackstageAuthHeaders(JSON_HEADERS),
     });
 
     const token = getToken(cluster);
