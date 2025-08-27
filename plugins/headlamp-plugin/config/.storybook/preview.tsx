@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import React from 'react';
+
 import { ThemeProvider } from '@mui/material/styles';
-// import { initialize, mswLoader } from 'msw-storybook-addon';
-// import './index.css';
 import { Title, Subtitle, Description, Primary, Controls } from '@storybook/blocks';
-// import { baseMocks } from './baseMocks';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import {
   darkTheme,
   lightTheme,
 } from '@kinvolk/headlamp-plugin/lib/components/App/defaultAppThemes';
 import { createMuiTheme } from '@kinvolk/headlamp-plugin/lib/lib/themes';
+
+// import { initialize, mswLoader } from 'msw-storybook-addon';
+// import './index.css';
+// import { baseMocks } from './baseMocks';
 
 // https://github.com/mswjs/msw-storybook-addon
 // initialize({
